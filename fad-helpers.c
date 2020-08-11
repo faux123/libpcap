@@ -71,6 +71,10 @@ struct rtentry;		/* declarations in <net/if.h> */
 #define INT_MAX		2147483647
 #endif
 
+#ifdef HAVE_PF_RING
+#include <sys/stat.h>
+#endif
+
 #include "pcap-int.h"
 
 #ifdef HAVE_OS_PROTO_H
@@ -380,6 +384,40 @@ add_or_find_if(pcap_if_t **curdev_ret, pcap_if_t **alldevs, const char *name,
 	u_int this_figure_of_merit, nextdev_figure_of_merit;
 	char open_errbuf[PCAP_ERRBUF_SIZE];
 	int ret;
+
+#ifdef HAVE_PF_RING
+	if (description == NULL) {
+		char buf[256]; 
+		struct stat st;
+	  
+		snprintf(buf, sizeof(buf), "/proc/net/pf_ring/dev/%s/info", name);
+	  
+		if (stat(buf, &st) == 0) {
+			FILE *fd = fopen(buf, "r");
+
+			snprintf(buf, sizeof(buf), "%s", "PF_RING");
+	    
+			if (fd != NULL) {
+				u_int zc_found = 0;
+				char file_buf[255];
+
+				while(fgets(file_buf, sizeof(file_buf), fd) != NULL) {
+					if(strstr(file_buf, "ZC")) {
+						zc_found = 1;
+						break;
+					}
+				}
+
+				fclose(fd);
+
+				if (zc_found)
+					snprintf(buf, sizeof(buf), "%s", "PF_RING ZC");
+			}
+
+			description = strdup(buf);
+		} /* stat() */	  
+	}
+#endif
 
 	/*
 	 * Is there already an entry in the list for this interface?

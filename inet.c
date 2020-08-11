@@ -129,6 +129,9 @@ pcap_lookupnet(device, netp, maskp, errbuf)
 	register int fd;
 	register struct sockaddr_in *sin4;
 	struct ifreq ifr;
+#ifdef HAVE_PF_RING
+	char *comma;
+#endif
 
 	/*
 	 * The pseudo-device "any" listens on all interfaces and therefore
@@ -151,6 +154,9 @@ pcap_lookupnet(device, netp, maskp, errbuf)
 #ifdef HAVE_SNF_API
 	    || strstr(device, "snf") != NULL
 #endif
+#ifdef HAVE_PF_RING
+	    || (strncmp(device, "zc:", 3) == 0)
+#endif
 	    ) {
 		*netp = *maskp = 0;
 		return 0;
@@ -166,6 +172,11 @@ pcap_lookupnet(device, netp, maskp, errbuf)
 #ifdef linux
 	/* XXX Work around Linux kernel bug */
 	ifr.ifr_addr.sa_family = AF_INET;
+#endif
+#ifdef HAVE_PF_RING
+	/* Trick for interface list */
+	if ((comma = strrchr(ifr.ifr_name, ',')) != NULL)
+		comma[0] = '\0';
 #endif
 	(void)strlcpy(ifr.ifr_name, device, sizeof(ifr.ifr_name));
 	if (ioctl(fd, SIOCGIFADDR, (char *)&ifr) < 0) {
@@ -188,6 +199,11 @@ pcap_lookupnet(device, netp, maskp, errbuf)
 	ifr.ifr_addr.sa_family = AF_INET;
 #endif
 	(void)strlcpy(ifr.ifr_name, device, sizeof(ifr.ifr_name));
+#ifdef HAVE_PF_RING
+	/* Trick for interface list */
+	if ((comma = strrchr(ifr.ifr_name, ',')) != NULL)
+		comma[0] = '\0';
+#endif
 	if (ioctl(fd, SIOCGIFNETMASK, (char *)&ifr) < 0) {
 		(void)pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
 		    "SIOCGIFNETMASK: %s: %s", device, pcap_strerror(errno));

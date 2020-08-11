@@ -914,6 +914,10 @@ void
 pcap_breakloop(pcap_t *p)
 {
 	p->break_loop = 1;
+#ifdef HAVE_PF_RING
+	 if (p->ring != NULL)
+		pfring_breakloop(p->ring);
+#endif
 }
 
 int
@@ -1416,6 +1420,10 @@ pcap_fileno(pcap_t *p)
 int
 pcap_get_selectable_fd(pcap_t *p)
 {
+#ifdef HAVE_PF_RING
+	if (p->ring != NULL)
+		p->sync_selectable_fd = 1;
+#endif
 	return (p->selectable_fd);
 }
 #endif

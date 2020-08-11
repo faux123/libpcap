@@ -788,7 +788,8 @@ AC_HELP_STRING([--with-dag@<:@=DIR@:>@],[include Endace DAG support (located in 
 		#
 		# Use DAG API if present, otherwise don't
 		#
-		want_dag=ifpresent
+		want_dag=no # PF_RING
+		#want_dag=ifpresent
 	fi
 ])
 
@@ -884,6 +885,19 @@ if test "$want_dag" != no; then
 		fi
 	fi
 fi
+
+LIBS="$LIBS `../lib/pfring_config --libs`"
+
+# NPCAP - Default disabled
+HAVE_PCAP_NPCAP=""
+AC_ARG_ENABLE([npcap], AS_HELP_STRING([--enable-npcap], [Enable NPCAP support in libpcap]))
+if test "x$enable_npcap" = "xyes"; then
+	AC_MSG_RESULT(yes)
+	HAVE_PCAP_NPCAP="-DHAVE_PCAP_NPCAP"
+else
+	AC_MSG_RESULT(no)
+fi
+AC_SUBST(HAVE_PCAP_NPCAP)
 
 AC_ARG_WITH(septel,
 AC_HELP_STRING([--with-septel@<:@=DIR@:>@],[include Septel support (located in directory DIR, if supplied).  @<:@default=yes, if present@:>@]),
@@ -991,7 +1005,8 @@ AC_HELP_STRING([--with-snf@<:@=DIR@:>@],[include Myricom SNF support (located in
 		#
 		# Use Sniffer API if present, otherwise don't
 		#
-		want_snf=ifpresent
+		with_snf=no # PF_RING
+		#want_snf=ifpresent
 	fi
 ])
 
@@ -1695,6 +1710,8 @@ if test "xxx_only" = yes; then
 	# want D-Bus support.
 	enable_dbus=no
 fi
+
+enable_dbus=no
 
 if test "x$enable_dbus" != "xno"; then
 	if test "x$enable_dbus" = "xyes"; then
